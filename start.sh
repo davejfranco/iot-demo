@@ -1,24 +1,29 @@
-#!/usr/bin/env bash
-# stop script on error
-set -e
+#!/bin/bash
 
-if [ ! -f .env ]; then
+SERVER_NAME=$(hostname)
+
+# Check if .env directory exists and contains a valid virtual environment
+if [ ! -f .env/bin/activate ]; then
     echo "Setting up python environment"
-    sudo apt install python3.12-venv
+    sudo apt update
+    sudo apt install python3.12-venv -y
     python3 -m venv .env
 fi
 
-echo "Activating python environment"
-source .env/bin/activate
-echo "Installing python requirements"
-pip install -r requirements.txt
+# Check if awscrt is installed
+if ! .env/bin/pip freeze | grep -q "awscrt"; then
+    echo "Installing python requirements"
+    .env/bin/pip install -r requirements.txt
+fi
 
+# Run the script
 echo "Running python script"
-python3 connect.py --endpoint ajqo6eprnfcvq-ats.iot.eu-central-1.amazonaws.com \
+.env/bin/python connect.py --endpoint "$1" \
         --root-ca root-CA.crt \
-        --cert multipass-try-certificate.pem.crt \
-        --key multipass-try-private.key \
-        --client-id basicPubSub \
-        --topic sdk/test/python \
-        --message 'Hello Mother fucker' \
+        --cert "$SERVER_NAME.pem.crt" \
+        --key "$SERVER_NAME-private.key" \
+        --client-id onomondoPubSub \
+        --topic onomondo/youtube/demo \
+        --message "$2" \
         --count 0
+
